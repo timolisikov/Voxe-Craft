@@ -727,3 +727,11 @@ button {
     font-size: 0.64rem;
   }
 }
+
+@media (max-height: 520px) {
+  .mobile-actions {
+    top: max(66px, calc(env(safe-area-inset-top) + 66px));
+    right: max(92px, calc(env(safe-area-inset-right) + 92px));
+    bottom: auto;
+  }
+}
