@@ -1874,6 +1874,19 @@ function createWaterBumpTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+function getViewportSize(): { width: number; height: number } {
+  const viewport = window.visualViewport;
+
+  return {
+    width: Math.max(1, Math.round(viewport?.width ?? window.innerWidth)),
+    height: Math.max(1, Math.round(viewport?.height ?? window.innerHeight))
+  };
+}
+
+function setAppViewportHeight(height: number): void {
+  document.documentElement.style.setProperty('--app-height', `${height}px`);
+}
+
 async function main(): Promise<void> {
   const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -1884,6 +1897,8 @@ async function main(): Promise<void> {
   app.replaceChildren();
 
   const ui = createUi();
+  const initialViewport = getViewportSize();
+  setAppViewportHeight(initialViewport.height);
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -1891,7 +1906,7 @@ async function main(): Promise<void> {
   });
 
   renderer.setPixelRatio(navigator.webdriver ? 1 : Math.min(window.devicePixelRatio, 1.5));
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(initialViewport.width, initialViewport.height);
   renderer.shadowMap.enabled = false;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1901,7 +1916,7 @@ async function main(): Promise<void> {
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0xd7d1c2, 0.009);
 
-  const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 260);
+  const camera = new THREE.PerspectiveCamera(72, initialViewport.width / initialViewport.height, 0.05, 260);
   camera.rotation.order = 'YXZ';
   scene.add(camera);
 
@@ -2005,11 +2020,34 @@ async function main(): Promise<void> {
   camera.rotation.set(pitch, yaw, 0);
   selectHotbarItem(selectedHotbarItem);
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+  const syncViewport = (): void => {
+    const viewport = getViewportSize();
+    setAppViewportHeight(viewport.height);
+    camera.aspect = viewport.width / viewport.height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+    renderer.setSize(viewport.width, viewport.height);
+  };
+
+  window.addEventListener('resize', syncViewport);
+  window.visualViewport?.addEventListener('resize', syncViewport);
+  window.visualViewport?.addEventListener('scroll', syncViewport);
+
+  document.addEventListener(
+    'touchmove',
+    (event) => {
+      if (started && inputMode === 'mobile' && !isInventoryOpen) {
+        event.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+  document.addEventListener(
+    'gesturestart',
+    (event) => {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
 
   document.addEventListener('keydown', (event) => {
     if (event.code === 'Escape' && document.fullscreenElement) {

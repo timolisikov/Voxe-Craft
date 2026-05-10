@@ -3,11 +3,28 @@
   letter-spacing: 0;
 }
 
+:root {
+  --app-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-height: 100dvh;
+  }
+}
+
+html {
+  min-height: -webkit-fill-available;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
 html,
 body,
 #app {
   width: 100%;
-  height: 100%;
+  height: var(--app-height);
+  min-height: var(--app-height);
   margin: 0;
   overflow: hidden;
   font-family:
@@ -17,11 +34,20 @@ body,
   color: #f6f4ed;
 }
 
+body {
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}
+
 canvas {
   position: fixed;
   inset: 0;
   width: 100%;
-  height: 100%;
+  height: var(--app-height);
   display: block;
   cursor: crosshair;
   touch-action: none;
@@ -155,8 +181,8 @@ button {
 
 .top-bar {
   position: fixed;
-  top: 14px;
-  right: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
   display: flex;
   align-items: center;
   gap: 10px;
@@ -164,8 +190,8 @@ button {
 
 .fullscreen-button {
   position: fixed;
-  top: 14px;
-  left: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
   display: grid;
   place-items: center;
   width: 42px;
@@ -726,8 +752,8 @@ button {
   }
 
   .top-bar {
-    top: 10px;
-    right: 10px;
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
   }
 
   .target-chip {
@@ -735,10 +761,45 @@ button {
   }
 
   .hotbar {
-    right: 12px;
-    left: 12px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: max(10px, env(safe-area-inset-left));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
     transform: none;
+  }
+
+  .mobile-joystick {
+    left: max(16px, env(safe-area-inset-left));
+    bottom: max(140px, calc(env(safe-area-inset-bottom) + 126px));
+    width: 112px;
+    height: 112px;
+  }
+
+  .mobile-joystick-knob {
+    width: 44px;
+    height: 44px;
+  }
+
+  .mobile-actions {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(144px, calc(env(safe-area-inset-bottom) + 130px));
+    gap: 10px;
+  }
+
+  .mobile-action-button {
+    width: 58px;
+    height: 58px;
+  }
+
+  .mobile-action-button svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mobile-block-icon {
+    width: 29px;
+    height: 29px;
   }
 
   .ore-inventory {
@@ -747,7 +808,8 @@ button {
   }
 
   .slot {
-    height: 54px;
+    height: 50px;
+    padding: 6px 5px 5px;
   }
 
   .slot-label {
