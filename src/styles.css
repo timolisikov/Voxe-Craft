@@ -294,6 +294,33 @@ button {
   transform: translate(-50%, -50%);
 }
 
+.mobile-inventory-button {
+  position: fixed;
+  top: max(66px, calc(env(safe-area-inset-top) + 66px));
+  left: max(14px, env(safe-area-inset-left));
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  color: #ffe8a6;
+  background: rgba(16, 18, 18, 0.62);
+  pointer-events: auto;
+  touch-action: manipulation;
+  backdrop-filter: blur(10px);
+}
+
+.mobile-inventory-button svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.35;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
 .mobile-move-buttons {
   position: fixed;
   top: max(66px, calc(env(safe-area-inset-top) + 66px));

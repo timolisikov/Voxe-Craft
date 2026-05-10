@@ -135,6 +135,8 @@ const PLAYER_SWIM_SPEED = 4.6;
 const PLAYER_SWIM_UP_SPEED = 4.3;
 const PLAYER_WATER_SINK_SPEED = -1.05;
 const PLAYER_WATER_VERTICAL_ACCELERATION = 18;
+const COMPUTER_LOOK_SENSITIVITY = 0.0022;
+const MOBILE_LOOK_SENSITIVITY = 0.006;
 const MONSTER_EMERALD_INTERVAL = 10;
 const MONSTER_CAVE_THRESHOLD = 0.32;
 const MONSTER_CATCH_DISTANCE = 1.35;
@@ -1261,6 +1263,7 @@ function createUi(): {
   mobileCrouchButton: HTMLButtonElement;
   mobileMineButton: HTMLButtonElement;
   mobilePlaceButton: HTMLButtonElement;
+  mobileInventoryButton: HTMLButtonElement;
   resumeLayer: HTMLDivElement;
   resumeButton: HTMLButtonElement;
   pauseMenu: HTMLDivElement;
@@ -1309,6 +1312,13 @@ function createUi(): {
       <div class="mobile-joystick" id="mobile-joystick" aria-hidden="true">
         <div class="mobile-joystick-knob" id="mobile-joystick-knob"></div>
       </div>
+      <button class="mobile-inventory-button" id="mobile-inventory-button" type="button" aria-label="Erz-Inventar">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 4h10l3 5-8 11L4 9l3-5Z" />
+          <path d="M4 9h16" />
+          <path d="m9 4 3 16 3-16" />
+        </svg>
+      </button>
       <div class="mobile-move-buttons">
         <button class="mobile-move-button" id="mobile-jump-button" type="button" aria-label="Springen">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1382,6 +1392,7 @@ function createUi(): {
     mobileCrouchButton: document.querySelector<HTMLButtonElement>('#mobile-crouch-button')!,
     mobileMineButton: document.querySelector<HTMLButtonElement>('#mobile-mine-button')!,
     mobilePlaceButton: document.querySelector<HTMLButtonElement>('#mobile-place-button')!,
+    mobileInventoryButton: document.querySelector<HTMLButtonElement>('#mobile-inventory-button')!,
     resumeLayer: document.querySelector<HTMLDivElement>('#resume-layer')!,
     resumeButton: document.querySelector<HTMLButtonElement>('#resume-button')!,
     pauseMenu: document.querySelector<HTMLDivElement>('#pause-menu')!,
@@ -2056,8 +2067,8 @@ async function main(): Promise<void> {
       return;
     }
 
-    yaw -= event.movementX * 0.0022;
-    pitch -= event.movementY * 0.0022;
+    yaw -= event.movementX * COMPUTER_LOOK_SENSITIVITY;
+    pitch -= event.movementY * COMPUTER_LOOK_SENSITIVITY;
     pitch = clamp(pitch, -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
     camera.rotation.set(pitch, yaw, 0);
   });
@@ -2140,8 +2151,8 @@ async function main(): Promise<void> {
     const deltaY = event.clientY - mobileLookY;
     mobileLookX = event.clientX;
     mobileLookY = event.clientY;
-    yaw -= deltaX * 0.004;
-    pitch -= deltaY * 0.004;
+    yaw -= deltaX * MOBILE_LOOK_SENSITIVITY;
+    pitch -= deltaY * MOBILE_LOOK_SENSITIVITY;
     pitch = clamp(pitch, -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
     camera.rotation.set(pitch, yaw, 0);
     event.preventDefault();
@@ -2201,6 +2212,14 @@ async function main(): Promise<void> {
       } else {
         placeBlock();
       }
+    }
+
+    event.preventDefault();
+  });
+
+  ui.mobileInventoryButton.addEventListener('pointerdown', (event) => {
+    if (inputMode === 'mobile' && started && !isPaused && !isJumpscareActive) {
+      setInventoryOpen(true);
     }
 
     event.preventDefault();
