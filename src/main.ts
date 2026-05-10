@@ -6,6 +6,19 @@ declare global {
   interface Window {
     __VOXEL_ASSETS__?: Record<string, string>;
   }
+
+  interface Document {
+    webkitFullscreenElement?: Element | null;
+    webkitExitFullscreen?: () => Promise<void> | void;
+  }
+
+  interface HTMLElement {
+    webkitRequestFullscreen?: () => Promise<void> | void;
+  }
+
+  interface Navigator {
+    standalone?: boolean;
+  }
 }
 
 export type BlockId =
@@ -1887,6 +1900,26 @@ function setAppViewportHeight(height: number): void {
   document.documentElement.style.setProperty('--app-height', `${height}px`);
 }
 
+function getFullscreenElement(): Element | null {
+  return document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+}
+
+function getFullscreenRequest(element: HTMLElement): (() => Promise<void> | void) | null {
+  return element.requestFullscreen?.bind(element) ?? element.webkitRequestFullscreen?.bind(element) ?? null;
+}
+
+function getFullscreenExit(): (() => Promise<void> | void) | null {
+  return document.exitFullscreen?.bind(document) ?? document.webkitExitFullscreen?.bind(document) ?? null;
+}
+
+function isStandaloneDisplay(): boolean {
+  return (
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  );
+}
+
 async function main(): Promise<void> {
   const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -1994,6 +2027,7 @@ async function main(): Promise<void> {
   let started = false;
   let isPaused = false;
   let isInventoryOpen = false;
+  let fallbackFullscreen = false;
   let swingTime = 0;
   let swingKind: 'mine' | 'place' = 'mine';
   let currentHit: RaycastHit | null = null;
@@ -2050,7 +2084,7 @@ async function main(): Promise<void> {
   );
 
   document.addEventListener('keydown', (event) => {
-    if (event.code === 'Escape' && document.fullscreenElement) {
+    if (event.code === 'Escape' && (getFullscreenElement() || fallbackFullscreen)) {
       event.preventDefault();
       exitFullscreen();
       return;
@@ -2124,6 +2158,7 @@ async function main(): Promise<void> {
   });
 
   document.addEventListener('fullscreenchange', updateFullscreenButtonState);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButtonState);
 
   renderer.domElement.addEventListener('contextmenu', (event) => event.preventDefault());
   renderer.domElement.addEventListener('click', () => {
@@ -2273,7 +2308,10 @@ async function main(): Promise<void> {
   ui.computerButton.addEventListener('click', () => startGame('computer'));
   ui.mobileButton.addEventListener('click', () => startGame('mobile'));
 
-  ui.fullscreenButton.addEventListener('click', () => toggleFullscreen());
+  ui.fullscreenButton.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    toggleFullscreen();
+  });
   ui.resumeButton.addEventListener('click', () => {
     if (inputMode === 'computer') {
       requestPointerLock(renderer.domElement);
@@ -2404,22 +2442,51 @@ async function main(): Promise<void> {
   }
 
   function toggleFullscreen(): void {
-    if (document.fullscreenElement) {
+    if (getFullscreenElement() || fallbackFullscreen) {
       exitFullscreen();
       return;
     }
 
-    void Promise.resolve(document.documentElement.requestFullscreen()).catch(() => undefined);
+    const requestFullscreen = getFullscreenRequest(document.documentElement);
+
+    if (!requestFullscreen) {
+      setFallbackFullscreen(true);
+      return;
+    }
+
+    void Promise.resolve(requestFullscreen())
+      .then(() => {
+        setFallbackFullscreen(false);
+      })
+      .catch(() => {
+        setFallbackFullscreen(true);
+      });
   }
 
   function exitFullscreen(): void {
-    if (document.fullscreenElement) {
-      void Promise.resolve(document.exitFullscreen()).catch(() => undefined);
+    if (fallbackFullscreen) {
+      setFallbackFullscreen(false);
+    }
+
+    if (getFullscreenElement()) {
+      const exit = getFullscreenExit();
+      void Promise.resolve(exit?.()).catch(() => undefined);
     }
   }
 
+  function setFallbackFullscreen(active: boolean): void {
+    fallbackFullscreen = active;
+    document.body.classList.toggle('is-fallback-fullscreen', fallbackFullscreen);
+    updateFullscreenButtonState();
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, fallbackFullscreen ? 1 : 0);
+      syncViewport();
+    });
+  }
+
   function updateFullscreenButtonState(): void {
-    const isFullscreen = Boolean(document.fullscreenElement);
+    const isFullscreen = Boolean(getFullscreenElement()) || fallbackFullscreen || isStandaloneDisplay();
     ui.fullscreenButton.classList.toggle('is-on', isFullscreen);
     ui.fullscreenButton.setAttribute('aria-label', isFullscreen ? 'Fullscreen verlassen' : 'Fullscreen');
     ui.pauseFullscreenButton.textContent = isFullscreen ? 'Fullscreen verlassen' : 'Fullscreen';

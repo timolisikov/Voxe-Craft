@@ -220,6 +220,17 @@ button {
   background: rgba(48, 43, 28, 0.76);
 }
 
+body.is-fallback-fullscreen .top-bar {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.is-fallback-fullscreen .fullscreen-button {
+  border-color: rgba(245, 208, 114, 0.86);
+  background: rgba(48, 43, 28, 0.86);
+}
+
 .target-chip {
   min-width: 108px;
   max-width: min(42vw, 220px);
