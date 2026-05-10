@@ -1920,6 +1920,13 @@ function isStandaloneDisplay(): boolean {
   );
 }
 
+function isIosDevice(): boolean {
+  return (
+    /iPad|iPhone|iPod/.test(window.navigator.userAgent) ||
+    (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)
+  );
+}
+
 async function main(): Promise<void> {
   const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -2308,10 +2315,7 @@ async function main(): Promise<void> {
   ui.computerButton.addEventListener('click', () => startGame('computer'));
   ui.mobileButton.addEventListener('click', () => startGame('mobile'));
 
-  ui.fullscreenButton.addEventListener('pointerdown', (event) => {
-    event.preventDefault();
-    toggleFullscreen();
-  });
+  bindTapButton(ui.fullscreenButton, () => toggleFullscreen());
   ui.resumeButton.addEventListener('click', () => {
     if (inputMode === 'computer') {
       requestPointerLock(renderer.domElement);
@@ -2319,7 +2323,7 @@ async function main(): Promise<void> {
   });
   ui.resetButton.addEventListener('click', () => resetWorld());
   ui.pauseResumeButton.addEventListener('click', () => setPaused(false));
-  ui.pauseFullscreenButton.addEventListener('click', () => toggleFullscreen());
+  bindTapButton(ui.pauseFullscreenButton, () => toggleFullscreen());
   ui.pauseResetButton.addEventListener('click', () => resetWorld());
   ui.oreCloseButton.addEventListener('click', () => setInventoryOpen(false));
   updateOreInventory();
@@ -2441,9 +2445,35 @@ async function main(): Promise<void> {
     button.addEventListener('lostpointercapture', release);
   }
 
+  function bindTapButton(button: HTMLButtonElement, onPress: () => void): void {
+    let lastPressTime = 0;
+
+    const press = (event: Event): void => {
+      const now = window.performance.now();
+
+      if (now - lastPressTime < 450) {
+        event.preventDefault();
+        return;
+      }
+
+      lastPressTime = now;
+      event.preventDefault();
+      onPress();
+    };
+
+    button.addEventListener('pointerdown', press);
+    button.addEventListener('touchend', press, { passive: false });
+    button.addEventListener('click', press);
+  }
+
   function toggleFullscreen(): void {
     if (getFullscreenElement() || fallbackFullscreen) {
       exitFullscreen();
+      return;
+    }
+
+    if (isIosDevice()) {
+      setFallbackFullscreen(true);
       return;
     }
 
